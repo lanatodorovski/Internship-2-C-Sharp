@@ -13,6 +13,7 @@ var Artikli = new List<(string naziv, int kolicina, float cijena, DateTime datum
     ("piletina", 15, 2.25f, new DateTime(2023, 11, 30)),
     ("jaja", 17, 2f, new DateTime(2023, 11, 11))
 };
+var ArtikliPotroseni = new List<(string naziv, int kolicina, float cijena, DateTime datumIstekaRoka)>();
 var Radnici = new List<(string imePrezime, DateTime rodenje)>()
 {
     ("mate matic", new DateTime(2000, 11, 3)),
@@ -21,9 +22,9 @@ var Radnici = new List<(string imePrezime, DateTime rodenje)>()
 };
 var Racuni = new Dictionary<int, (DateTime vrijemeIzdavanja, List<(string naziv, int kolicina)> proizvodi)>()
 {
-    { 1,(new DateTime(2023, 11, 17), new List<(string naziv, int kolicina)>(){("mlijeko", 3),("keksi", 1)})},
-    { 2,(new DateTime(2023, 10,1), new List<(string naziv, int kolicina)>(){ ("piletina", 1),("keksi", 2), ("mlijeko", 4)})},
-    { 3,(new DateTime(2023, 10,20), new List<(string naziv, int kolicina)>(){("sladoled", 3)})}
+    { 1,(new DateTime(2023, 11, 17,13,4,4), new List<(string naziv, int kolicina)>(){("mlijeko", 3),("keksi", 1)})},
+    { 2,(new DateTime(2023, 10,1,20,5,5), new List<(string naziv, int kolicina)>(){ ("piletina", 1),("keksi", 2), ("mlijeko", 4)})},
+    { 3,(new DateTime(2023, 10,20,15,2,2), new List<(string naziv, int kolicina)>(){("sladoled", 3)})}
 };
 static int Godine(DateTime datum)
 {
@@ -54,6 +55,36 @@ static int UnosRasponaIntegera(int donjaGranica, int gornjaGranica)
         }
     }
     return odabir;
+}
+static float  DvijeDecimale(float broj)
+{
+    return ((float)((int)(broj * 100f)) / 100f);
+}
+static int DanUMjesecu(int mjesec)
+{
+    int dan;
+    switch (mjesec)
+    {
+        case 1:
+        case 3:
+        case 5:
+        case 7:
+        case 8:
+        case 10:
+        case 12:
+            dan = UnosRasponaIntegera(1, 32);
+            break;
+        case 4:
+        case 6:
+        case 9:
+        case 11:
+            dan = UnosRasponaIntegera(1, 31);
+            break;
+        default:
+            dan = UnosRasponaIntegera(1, 29);
+            break;
+    }
+    return dan;
 }
 static float ProvjeraUnosaFloat(float broj)
 {
@@ -454,44 +485,46 @@ while (pocetniEkran)
                         izlazRacuni = true;
                         break;
                     case 1:
+                        Console.Clear();
+                        Console.WriteLine("Racuni > Unos Racuna");
+                        IspisArtiklaIme(Artikli);
+                        Racuni = UnosRacuna(Racuni, Artikli,ArtikliPotroseni);
                         break;
                     case 2:
+                        Console.Clear();
+                        Console.WriteLine("Racuni > Ispis Racuna\n");
+                        IspisRacuna(Artikli, Racuni, ArtikliPotroseni);
                         break;
                 }
             }
             break;
         case 4:
             var izlazStatistika = false;
+            string unesenaSifra = "";
             while (!izlazStatistika)
             {
                 Console.Clear();
-                Console.WriteLine("Statistika > ...\n");
+                Console.WriteLine("Statistika \n");
                 var predefiniranaSifra = "sifra123";
 
-                Console.Write("Unesi sifru za nastavak: ");
-                var unesenaSifra = Console.ReadLine();
-                var tocnostSifre = true;
-                if (predefiniranaSifra.Length == unesenaSifra.Length)
+                if(predefiniranaSifra != unesenaSifra)
                 {
-                    for (int i = 0; i < predefiniranaSifra.Length; i++)
+                    Console.Write("Unesi sifru za nastavak: ");
+                    unesenaSifra = Console.ReadLine();
+                    if(predefiniranaSifra == unesenaSifra)
                     {
-                        if (predefiniranaSifra[i] != unesenaSifra[i])
-                        {
-                            tocnostSifre = false;
-                        }
+                        Console.WriteLine("Sifra je ispravna. \n");
                     }
                 }
-                else
-                {
-                    tocnostSifre = false;
-                }
 
-                if (tocnostSifre)
+
+                int unos = 0;
+                if (predefiniranaSifra == unesenaSifra)
                 {
-                    Console.WriteLine("Sifra je ispravna. \n");
-                    Console.WriteLine("1 - Ukupan broj artikala u trgovini \n2 - Vrijednost artikala koji nisu još prodani \n3 - Vrijednost svih artikala koji su prodani \n4 - Stanje po mjesecima \n0 - Natrag");
+
+                    Console.WriteLine("1 - Ukupan broj artikala u trgovini \n2 - Vrijednost artikala koji nisu još prodani \n3 - Vrijednost svih artikala koji su prodani \n4 - Stanje zarade po mjesecima \n0 - Natrag na pocetni ekran");
                     Console.Write("\nUnesi broj: ");
-                    var unos = UnosRasponaIntegera(0, 5);
+                    unos = UnosRasponaIntegera(0, 5);
 
                     switch (unos)
                     {
@@ -499,20 +532,43 @@ while (pocetniEkran)
                             izlazStatistika = true;
                             break;
                         case 1:
+                            Console.WriteLine($"\nUkupan broj svih artikla u trgovini je {UkupanBrojArtikla(Artikli)} \n");
                             break;
                         case 2:
+                            Console.WriteLine($"\nVrijednost artikala koji još nisu prodni je {Artikli.Count - VrijednostProdanihArtikala(Racuni)}");
                             break;
                         case 3:
+                            Console.WriteLine("\nVrijednost svih proizvoda koji su prodani je {0}", VrijednostSveukupnoProdanihArtikala(Racuni));
                             break;
                         case 4:
+                            Console.Write("\nUnesi godinu od koje želiš vidjeti stanje: ");
+                            var godina = ProvjeraUnosaInt(0);
+                            Console.Write("Unesi mjesec od kojeg želiš vidjeti stanje: ");
+                            var mjesec = UnosRasponaIntegera(1, 13);
+                            var ukupnaZaradaUMjesecu = UkupnaZaradaUMjesecu(Artikli, Racuni, godina, mjesec,ArtikliPotroseni) / 3;
+
+                            Console.Write("Unesi placu jednog radnika: ");
+                            var placa = ProvjeraUnosaFloat(0);
+                            var sveukupniIznosPlace = placa * Radnici.Count;
+
+                            Console.Write("Unesi iznos najma i ostalih troskova: ");
+                            var ostaliTroskovi = ProvjeraUnosaFloat(0);
+
+                            Console.WriteLine($"\nStanje zarade {godina}/{mjesec} je {DvijeDecimale(ukupnaZaradaUMjesecu - sveukupniIznosPlace - ostaliTroskovi)}e");
                             break;
                     }
                 }
                 else
                 {
-                    Console.WriteLine("Sifra je neispravna. Stisnite ENTER za povratak na početni ekran.");
-                    Console.ReadKey();
+                    Console.WriteLine("Sifra je neispravna.");
+                    Console.WriteLine("Stisnite ENTER za povratak na pocetni ekran.");
+                    Console.ReadLine();
                     izlazStatistika = true;
+                }
+                if(unos != 0)
+                {
+                    Console.WriteLine("Stisnite ENTER za ponovni unos.");
+                    Console.ReadLine();
                 }
             }
             break;
@@ -549,30 +605,10 @@ static List<(string naziv, int kolicina, float cijena, DateTime datumIstekaRoka)
         Console.Write("\nUnesi godinu isteka roka: ");
         var godina = ProvjeraUnosaInt(0);
         Console.Write("\nUnesi mjesec isteka roka: ");
-        var mjesec = UnosRasponaIntegera(0, 13);
+        var mjesec = UnosRasponaIntegera(1, 13);
         Console.Write("\nUnesi dan isteka roka: ");
-        int dan;
-        switch (mjesec)
-        {
-            case 1:
-            case 3:
-            case 5:
-            case 7:
-            case 8:
-            case 10:
-            case 12:
-                dan = UnosRasponaIntegera(1, 32);
-                break;
-            case 4:
-            case 6:
-            case 9:
-            case 11:
-                dan = UnosRasponaIntegera(1, 31);
-                break;
-            default:
-                dan = UnosRasponaIntegera(1, 29);
-                break;
-        }
+        int dan = DanUMjesecu(mjesec);
+ 
 
         artikli.Add((naziv: nazivArtikla, kolicina: kolicinaArtikla, cijena: cijenaArtikla, datumIstekaRoka: new DateTime(godina, mjesec, dan)));
 
@@ -724,28 +760,8 @@ static List<(string naziv, int kolicina, float cijena, DateTime datumIstekaRoka)
                             Console.Write("Unesi novi mjesec isteka roka: ");
                             var mjesec = UnosRasponaIntegera(0, 13);
                             Console.Write("Unesi novi dan isteka roka: ");
-                            int dan;
-                            switch (mjesec)
-                            {
-                                case 1:
-                                case 3:
-                                case 5:
-                                case 7:
-                                case 8:
-                                case 10:
-                                case 12:
-                                    dan = UnosRasponaIntegera(1, 32);
-                                    break;
-                                case 4:
-                                case 6:
-                                case 9:
-                                case 11:
-                                    dan = UnosRasponaIntegera(1, 31);
-                                    break;
-                                default:
-                                    dan = UnosRasponaIntegera(1, 29);
-                                    break;
-                            }
+                            int dan = DanUMjesecu(mjesec);
+
                             Console.Write("Zelite li potvrditi uredivanje datuma isteka roka? (da / ne) ");
                             var noviProizvodDatum = (proizvod.naziv, proizvod.kolicina, proizvod.cijena, new DateTime(godina, mjesec, dan));
                             if (Potvrda())
@@ -1126,28 +1142,8 @@ static List<(string imePrezime, DateTime rodenje)> UnosRadnika(List<(string imeP
         Console.Write("\nUnesi mjesec rodenja: ");
         var mjesec = UnosRasponaIntegera(0, 13);
         Console.Write("\nUnesi dan rodenja: ");
-        int dan;
-        switch (mjesec)
-        {
-            case 1:
-            case 3:
-            case 5:
-            case 7:
-            case 8:
-            case 10:
-            case 12:
-                dan = UnosRasponaIntegera(1, 32);
-                break;
-            case 4:
-            case 6:
-            case 9:
-            case 11:
-                dan = UnosRasponaIntegera(1, 31);
-                break;
-            default:
-                dan = UnosRasponaIntegera(1, 29);
-                break;
-        }
+        int dan = DanUMjesecu(mjesec);
+
 
         radnici.Add((imePrezime: nazivOsobe, rodenje: new DateTime(godina, mjesec, dan)));
 
@@ -1257,7 +1253,7 @@ static List<(string imePrezime, DateTime rodenje)> UredivanjeRadnika(List<(strin
                             break;
                         case "1":
                             pronadenoSvojstvo = true;
-                            Console.Write("Unesi novo ime i pretime za radnika{0}: ", radnik.imePrezime);
+                            Console.Write("Unesi novo ime i pretime za radnika {0}: ", radnik.imePrezime);
                             var noviRadnik = (Console.ReadLine().ToLower(), radnik.rodenje);
                             Console.Write("Zelite li potvrditi uredivanje naziva? (da / ne) ");
                             if (Potvrda())
@@ -1276,28 +1272,8 @@ static List<(string imePrezime, DateTime rodenje)> UredivanjeRadnika(List<(strin
                             Console.Write("Unesi novi mjesec rodenja: ");
                             var mjesec = UnosRasponaIntegera(0, 13);
                             Console.Write("Unesi novi dan rodenja: ");
-                            int dan;
-                            switch (mjesec)
-                            {
-                                case 1:
-                                case 3:
-                                case 5:
-                                case 7:
-                                case 8:
-                                case 10:
-                                case 12:
-                                    dan = UnosRasponaIntegera(1, 32);
-                                    break;
-                                case 4:
-                                case 6:
-                                case 9:
-                                case 11:
-                                    dan = UnosRasponaIntegera(1, 31);
-                                    break;
-                                default:
-                                    dan = UnosRasponaIntegera(1, 29);
-                                    break;
-                            }
+                            int dan = DanUMjesecu(mjesec);
+
                             Console.Write("Zelite li potvrditi uredivanje datuma rodenja? (da / ne) ");
                             var noviRadnikDatum = (radnik.imePrezime, new DateTime(godina, mjesec, dan));
                             if (Potvrda())
@@ -1347,3 +1323,269 @@ static void IspisRadnikaTekuciMjesec(List<(string imePrezime, DateTime rodenje)>
         }
     }
 }
+static Dictionary<int, (DateTime vrijemeIzdavanja, List<(string naziv, int kolicina)> proizvodi)> UnosRacuna(Dictionary<int, (DateTime vrijemeIzdavanja, List<(string naziv, int kolicina)> proizvodi)> racuni, List<(string naziv, int kolicina, float cijena, DateTime datumIstekaRoka)> artikli, List<(string naziv, int kolicina, float cijena, DateTime datumIstekaRoka)> artikliPotroseni)
+{
+    var racuniKopija = new Dictionary<int, (DateTime vrijemeIzdavanja, List<(string naziv, int kolicina)> proizvodi)>();
+    foreach(var racun in racuni)
+    {
+        racuniKopija.Add(racun.Key, racun.Value);
+    }
+
+    var ListaKupljenihProizvoda = new List<(string naziv, int kolicina)>();
+    var unosKupljenihProizvoda = true;
+    float cijena = 0f;
+    var vrijemeIzdavanja = DateTime.Now;
+    int id = racuni.Count + 1;
+    while (unosKupljenihProizvoda)
+    {
+        Console.Write("\nUnos naziva kupljenog proizvoda: ");
+        string naziv = Console.ReadLine();
+        int kolicina = 0;
+        foreach (var proizvod in artikli)
+        {
+            if (proizvod.naziv == naziv)
+            {
+                var unosKolicine = true;
+                Console.Write("Unesi kolicinu kupljenog proizvoda {0}: ", naziv);
+                kolicina = ProvjeraUnosaInt(1);
+                while (unosKolicine)
+                {
+                    switch (proizvod.kolicina - kolicina)
+                    {
+                        case < 0:
+                            Console.Write("U trgovini nema dovoljno proizvoda {0}. Unesite manju kolicinu kupljenog proizvoda {0}: ", naziv);
+                            kolicina = ProvjeraUnosaInt(1);
+                            break;
+                        default:
+                            cijena += proizvod.cijena * kolicina;
+                            ListaKupljenihProizvoda.Add((naziv, kolicina));
+                            unosKolicine = false;
+                            break;
+                    }
+                }
+            }
+        }
+        if (kolicina == 0)
+        {
+            Console.WriteLine("Proizvod nije pronaden. Pokusajte unijeti ponovo.");
+        }
+        else
+        {
+            Console.Write("Jeste li unijeli sve kupljene proizvode? (da / ne) ");
+            unosKupljenihProizvoda = !Potvrda();
+        }
+
+    }
+    racuniKopija.Add(id, (vrijemeIzdavanja, ListaKupljenihProizvoda));
+    cijena = DvijeDecimale(cijena);
+
+    string kljucnaRijec = "kljucnarijec";
+    var unosKLjucneRijeci = true;
+    string unesenaKljucnaRijec = "";
+    while (unosKLjucneRijeci)
+    {
+        Console.Write("\nUnesi kljucnu rijec za nastavak: ");
+        unesenaKljucnaRijec = Console.ReadLine();
+        if (unesenaKljucnaRijec == kljucnaRijec)
+        {
+
+            unosKLjucneRijeci = false;
+        }
+        else
+        {
+            Console.Write("Zelite li ponoviti unos klucne rijeci (nebudete li htjeli trenutni unos kupljenih proizvoda ce se izbrisati)? (da / ne) ");
+            unosKLjucneRijeci = Potvrda();
+        }
+    }
+
+    var potvrda = false;
+    if(unesenaKljucnaRijec == kljucnaRijec)
+    {
+        IspisPojedinogRacuna(id, artikli, racuniKopija, artikliPotroseni);
+        Console.Write("Potvrdujete li printanje ovog racuna? (da / ne)");
+        potvrda = Potvrda();
+    }
+
+    Console.WriteLine("\nStisnite ENTER za drugi unos");
+    Console.ReadLine();
+    if (potvrda)
+    {
+        var artikliKopija = new List<(string naziv, int kolicina, float cijena, DateTime datumIstekaRoka)>();
+        foreach(var proizvod in artikli)
+        {
+            artikliKopija.Add(proizvod);
+        }
+        foreach (var prodaniProizvod in racuniKopija[id].proizvodi)
+        {
+            foreach(var proizvod in artikliKopija)
+            {
+                if (proizvod.naziv == prodaniProizvod.naziv)
+                {
+                    var novaKolicina = proizvod.kolicina - prodaniProizvod.kolicina;
+                    if(novaKolicina > 0)
+                    {
+                        var noviProizvodKolicina = (proizvod.naziv, novaKolicina, proizvod.cijena, proizvod.datumIstekaRoka);
+                        artikli[artikli.IndexOf(proizvod)] = noviProizvodKolicina;
+                        
+                    }
+                    else
+                    {
+                        artikli.Remove(proizvod);
+                        artikliPotroseni.Add(proizvod);
+                    }
+                }
+            }
+        }
+        return racuniKopija;
+    }
+    else
+    {
+        return racuni;
+    }
+}
+
+static void IspisRacuna(List<(string naziv, int kolicina, float cijena, DateTime datumIstekaRoka)> artikli, Dictionary<int, (DateTime vrijemeIzdavanja, List<(string naziv, int kolicina)> proizvodi)> racuni, List<(string naziv, int kolicina, float cijena, DateTime datumIstekaRoka)> artikliPotroseni)
+{
+    Console.WriteLine("ID - DATUM I VRIJEME - UKUPNI IZNOS");
+    foreach (var racun in racuni)
+    {
+        var ukupniIznos = 0f;
+        foreach(var prodaniProizvod in racun.Value.proizvodi)
+        {
+            foreach(var proizvod in artikli)
+            {
+                if(prodaniProizvod.naziv == proizvod.naziv)
+                {
+                    ukupniIznos += DvijeDecimale(prodaniProizvod.kolicina * proizvod.cijena);
+                }
+
+            }
+            foreach (var proizvod in artikliPotroseni)
+            {
+                if (prodaniProizvod.naziv == proizvod.naziv)
+                {
+                    ukupniIznos += DvijeDecimale(prodaniProizvod.kolicina * proizvod.cijena);
+                }
+
+            }
+
+        }
+        Console.WriteLine($"{racun.Key} - {racun.Value.vrijemeIzdavanja} - {ukupniIznos}e");
+    }
+
+
+    Console.Write("Želite li vidjeti detalje određenog racuna? (da / ne) ");
+    bool unos = Potvrda();
+    while (unos)
+    {
+        Console.Write("Unesi ID racuna od kojega želiš detalje: ");
+        var id = UnosRasponaIntegera(0, racuni.Count + 1);
+        IspisPojedinogRacuna(id, artikli, racuni, artikliPotroseni);
+
+
+        Console.Write("Želite li vidjeti detalje jos jednog racuna? (da / ne) ");
+        unos = Potvrda();
+    }
+    Console.WriteLine("\nStisnite ENTER za drugi unos. ");
+    Console.ReadLine();
+}
+static void IspisPojedinogRacuna(int id, List<(string naziv, int kolicina, float cijena, DateTime datumIstekaRoka)> artikli, Dictionary<int, (DateTime vrijemeIzdavanja, List<(string naziv, int kolicina)> proizvodi)> racuni, List<(string naziv, int kolicina, float cijena, DateTime datumIstekaRoka)> artikliPotroseni)
+{
+    Console.WriteLine("\n-----------------------------");
+    Console.Write($"ID {id}\ndatum i vrijeme izdavanja: {racuni[id].vrijemeIzdavanja}\nproizvodi (NAZIV - KOLICINA):");
+    float ukupnaCijena = 0f;
+    foreach (var prodaniProizvod in racuni[id].proizvodi)
+    {
+        Console.Write($"- {prodaniProizvod.naziv} - {prodaniProizvod.kolicina}\n");
+        if (prodaniProizvod.naziv != racuni[id].proizvodi[racuni[id].proizvodi.Count - 1].naziv)
+        {
+            Console.Write("                             ");
+        }
+        foreach(var proizvod in artikli) {
+            if (prodaniProizvod.naziv == proizvod.naziv)
+            {
+                ukupnaCijena += DvijeDecimale(prodaniProizvod.kolicina * proizvod.cijena);
+            }
+        }
+        foreach (var proizvod in artikliPotroseni)
+        {
+            if (prodaniProizvod.naziv == proizvod.naziv)
+            {
+                ukupnaCijena += DvijeDecimale(prodaniProizvod.kolicina * proizvod.cijena);
+            }
+        }
+    }
+    Console.WriteLine($"Ukupna cijena: {ukupnaCijena}e");
+    Console.WriteLine("----------------------------- \n");
+}
+static int UkupanBrojArtikla(List<(string naziv, int kolicina, float cijena, DateTime datumIstekaRoka)> artikli)
+{
+    int kolicinaArtikla = 0;
+    foreach(var proizvod in artikli)
+    {
+        kolicinaArtikla += proizvod.kolicina;
+    }
+
+    return kolicinaArtikla;
+}
+static int VrijednostProdanihArtikala(Dictionary<int, (DateTime vrijemeIzdavanja, List<(string naziv, int kolicina)> proizvodi)> racuni)
+{
+    var ListaProdanihArtikla = new List<string>();
+    var vrijednostProdanihArtikala = 0;
+    foreach (var racun in racuni)
+    {
+          foreach(var prodaniProizvod in racun.Value.proizvodi)
+        {
+            if (!ListaProdanihArtikla.Contains(prodaniProizvod.naziv))
+            {
+                vrijednostProdanihArtikala++;
+                ListaProdanihArtikla.Add(prodaniProizvod.naziv);
+
+            }
+        }
+    }
+    return vrijednostProdanihArtikala;
+}
+
+static int VrijednostSveukupnoProdanihArtikala(Dictionary<int, (DateTime vrijemeIzdavanja, List<(string naziv, int kolicina)> proizvodi)> racuni)
+{
+    var vrijednostProdanihArtikala = 0;
+    foreach(var racun in racuni)
+    {
+        foreach(var proizvodProdan in racun.Value.proizvodi)
+        {
+            vrijednostProdanihArtikala += proizvodProdan.kolicina;
+        }
+    }
+    return vrijednostProdanihArtikala;
+}
+
+static float UkupnaZaradaUMjesecu(List<(string naziv, int kolicina, float cijena, DateTime datumIstekaRoka)> artikli, Dictionary<int, (DateTime vrijemeIzdavanja, List<(string naziv, int kolicina)> proizvodi)> racuni, int godina, int mjesec, List<(string naziv, int kolicina, float cijena, DateTime datumIstekaRoka)> artikliPotroseni)
+{
+    var ukupnaZarada = 0f;
+    foreach(var racun in racuni)
+    {
+        if(racun.Value.vrijemeIzdavanja.Year == godina && racun.Value.vrijemeIzdavanja.Month == mjesec)
+        {
+            foreach (var prodaniProizvod in racun.Value.proizvodi)
+            {
+                foreach (var proizvod in artikli)
+                {
+                    if (proizvod.naziv == prodaniProizvod.naziv)
+                    {
+                        ukupnaZarada += proizvod.cijena * prodaniProizvod.kolicina;
+                    }
+                }
+                foreach (var proizvod in artikliPotroseni)
+                {
+                    if (proizvod.naziv == prodaniProizvod.naziv)
+                    {
+                        ukupnaZarada += proizvod.cijena * prodaniProizvod.kolicina;
+                    }
+                }
+            }
+        }
+    }
+    return ukupnaZarada;
+}
+
